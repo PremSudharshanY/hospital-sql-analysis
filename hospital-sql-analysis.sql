@@ -1,145 +1,278 @@
-use project;
-select * from patients limit 10;
-select * from services_weekly limit 10;
-select * from staff limit 10;
-select * from staff_schedule limit 10;
+USE project;
 
-select count(*) from patients;
+SELECT * FROM patients LIMIT 10;
+SELECT * FROM services_weekly LIMIT 10;
+SELECT * FROM staff LIMIT 10;
+SELECT * FROM staff_schedule LIMIT 10;
 
-select distinct(service) from patients;
+SELECT COUNT(*) 
+FROM patients;
 
-select avg(age) as avg_age from patients;
+SELECT DISTINCT(service) 
+FROM patients;
 
-select * from patients
-where
-departure_date < arrival_date;
+SELECT AVG(age) AS avg_age 
+FROM patients;
 
-select name, age from patients where age = 0;
+SELECT * 
+FROM patients
+WHERE departure_date < arrival_date;
 
-select name,age,
-case
-when age <= 0 then "new born"
-when age <= 18 then "child"
-when age >= 18 then "adult"
-when age >= 65 then "mid age"
-else
-"aged"
-end as age_group from patients;
+SELECT name, age 
+FROM patients 
+WHERE age = 0;
 
-select patient_id,count(*) as cnt 
-from patients group by patient_id having cnt < 1;
-
-select satisfaction from patients where satisfaction is null;
-select * from patients where name is null,
-patient_id is null,
-name is null,
-service is null;
-
-select service,count(patient_id) as patient_id from patients
-group by service ;
-
-
-/Average satisfaction per service
-select service,avg(satisfaction) as avg_sat from patients
-group by service;
-
-/Longest stay patient
-select patient_id,name,datediff(departure_date,arrival_date)as long_stay from patients
-order by long_stay desc limit 1;
-
-/Total requests per service
-select service,sum(patients_request) as total_req from services_weekly
-group by service order by total_req desc;
-
-/Admission rate per service
-select service ,sum(patients_admitted)/sum(patients_request) as rate from services_weekly
-group by service order by rate;
-
-/Refusal rate per service
-select service,sum(patients_refused)/sum(patients_request) as reful_rate from services_weekly
-group by service order by reful_rate;
-
-/Staff count per service
-select service,count(distinct staff_id) as totl_staff from staff
-group by service order by totl_staff;
-
-/Avg staff presence
-select distinct staff_id,avg(present) as avg_present from staff_schedule
-group by staff_id order by avg_present;
-
-/Lowest attendance staff
-select staff_id,sum(present) as lowest_present from staff_schedule
-group by staff_id order by lowest_present desc limit 1;
-
-/Busiest service each week
-select week,patients_request,service,
-row_number() over (partition by week
- order by patients_request) as rn from services_weekly  ;
- 
- 
- select * from (select week,patients_request,service,
-row_number() over (partition by week
- order by patients_request) as rn from services_weekly ) as t1 where rn = 1;
- 
- /Week with highest demand
- select week,sum(patients_request) as high_demand from services_weekly
- group by week order by high_demand desc limit 1;
-
-/Staff vs satisfaction relation
 SELECT 
-sw.service,
-AVG(ss.present) as avg_staff,
-AVG(sw.patient_satisfaction) as avg_satisfaction
+    name, 
+    age,
+    CASE
+        WHEN age <= 0 THEN "new born"
+        WHEN age <= 18 THEN "child"
+        WHEN age >= 18 THEN "adult"
+        WHEN age >= 65 THEN "mid age"
+        ELSE "aged"
+    END AS age_group 
+FROM patients;
+
+SELECT 
+    patient_id,
+    COUNT(*) AS cnt 
+FROM patients 
+GROUP BY patient_id 
+HAVING cnt < 1;
+
+SELECT satisfaction 
+FROM patients 
+WHERE satisfaction IS NULL;
+
+SELECT * 
+FROM patients 
+WHERE name IS NULL,
+      patient_id IS NULL,
+      name IS NULL,
+      service IS NULL;
+
+SELECT 
+    service,
+    COUNT(patient_id) AS patient_id 
+FROM patients
+GROUP BY service;
+
+/* Average satisfaction per service */
+SELECT 
+    service,
+    AVG(satisfaction) AS avg_sat 
+FROM patients
+GROUP BY service;
+
+/* Longest stay patient */
+SELECT 
+    patient_id,
+    name,
+    DATEDIFF(departure_date, arrival_date) AS long_stay 
+FROM patients
+ORDER BY long_stay DESC 
+LIMIT 1;
+
+/* Total requests per service */
+SELECT 
+    service,
+    SUM(patients_request) AS total_req 
+FROM services_weekly
+GROUP BY service 
+ORDER BY total_req DESC;
+
+/* Admission rate per service */
+SELECT 
+    service,
+    SUM(patients_admitted) / SUM(patients_request) AS rate 
+FROM services_weekly
+GROUP BY service 
+ORDER BY rate;
+
+/* Refusal rate per service */
+SELECT 
+    service,
+    SUM(patients_refused) / SUM(patients_request) AS reful_rate 
+FROM services_weekly
+GROUP BY service 
+ORDER BY reful_rate;
+
+/* Staff count per service */
+SELECT 
+    service,
+    COUNT(DISTINCT staff_id) AS totl_staff 
+FROM staff
+GROUP BY service 
+ORDER BY totl_staff;
+
+/* Avg staff presence */
+SELECT 
+    staff_id,
+    AVG(present) AS avg_present 
+FROM staff_schedule
+GROUP BY staff_id 
+ORDER BY avg_present;
+
+/* Lowest attendance staff */
+SELECT 
+    staff_id,
+    SUM(present) AS lowest_present 
+FROM staff_schedule
+GROUP BY staff_id 
+ORDER BY lowest_present DESC 
+LIMIT 1;
+
+/* Busiest service each week */
+SELECT 
+    week,
+    patients_request,
+    service,
+    ROW_NUMBER() OVER (
+        PARTITION BY week
+        ORDER BY patients_request
+    ) AS rn 
+FROM services_weekly;
+
+SELECT * 
+FROM (
+    SELECT 
+        week,
+        patients_request,
+        service,
+        ROW_NUMBER() OVER (
+            PARTITION BY week
+            ORDER BY patients_request
+        ) AS rn 
+    FROM services_weekly
+) AS t1 
+WHERE rn = 1;
+
+/* Week with highest demand */
+SELECT 
+    week,
+    SUM(patients_request) AS high_demand 
+FROM services_weekly
+GROUP BY week 
+ORDER BY high_demand DESC 
+LIMIT 1;
+
+/* Staff vs satisfaction relation */
+SELECT 
+    sw.service,
+    AVG(ss.present) AS avg_staff,
+    AVG(sw.patient_satisfaction) AS avg_satisfaction
 FROM services_weekly sw
 JOIN staff_schedule ss
-ON sw.week = ss.week 
-AND sw.service = ss.service
+    ON sw.week = ss.week 
+    AND sw.service = ss.service
 GROUP BY sw.service;
 
-/Does refusal ↑ decrease satisfaction
-select service,avg(patients_refused)as avger_ref,
-avg(patient_satisfaction) as avg_st
-from services_weekly group by service order by avger_ref desc;
+/* Does refusal ↑ decrease satisfaction */
+SELECT 
+    service,
+    AVG(patients_refused) AS avger_ref,
+    AVG(patient_satisfaction) AS avg_st
+FROM services_weekly 
+GROUP BY service 
+ORDER BY avger_ref DESC;
 
-/Top 2 services per week
-select service,week,patients_request,
-row_number() over (partition by week order by service)as rn 
-from services_weekly;
+/* Top 2 services per week */
+SELECT 
+    service,
+    week,
+    patients_request,
+    ROW_NUMBER() OVER (
+        PARTITION BY week 
+        ORDER BY service
+    ) AS rn 
+FROM services_weekly;
 
-select * from (select service,week,patients_request,
-row_number() over (partition by week order by patients_request desc )as rn 
-from services_weekly) as t1 where rn <=2 order by week ,rn;
+SELECT * 
+FROM (
+    SELECT 
+        service,
+        week,
+        patients_request,
+        ROW_NUMBER() OVER (
+            PARTITION BY week 
+            ORDER BY patients_request DESC
+        ) AS rn 
+    FROM services_weekly
+) AS t1 
+WHERE rn <= 2 
+ORDER BY week, rn;
 
-/Which service needs more resources
-select service,sum(patients_request)-sum(patients_admitted) as demand from services_weekly 
-group by service order by demand desc limit 1;
+/* Which service needs more resources */
+SELECT 
+    service,
+    SUM(patients_request) - SUM(patients_admitted) AS demand 
+FROM services_weekly 
+GROUP BY service 
+ORDER BY demand DESC 
+LIMIT 1;
 
-/Which service has the highest unmet demand
-select service,sum(patients_request)-sum(patients_admitted) as demand from services_weekly
-group by service order by demand desc limit 1;
+/* Which service has the highest unmet demand */
+SELECT 
+    service,
+    SUM(patients_request) - SUM(patients_admitted) AS demand 
+FROM services_weekly
+GROUP BY service 
+ORDER BY demand DESC 
+LIMIT 1;
 
-/Which service has the highest refusal rate
-select service,sum(patients_refused)/sum(patients_request) as higrefu from services_weekly
-group by service order by higrefu  desc limit 1;
+/* Which service has the highest refusal rate */
+SELECT 
+    service,
+    SUM(patients_refused) / SUM(patients_request) AS higrefu 
+FROM services_weekly
+GROUP BY service 
+ORDER BY higrefu DESC 
+LIMIT 1;
 
-//Which week had the highest patient demand overall
-select week,service,sum(patients_request)as demand,
-row_number() over (partition by week order by sum(patients_request) desc ) as rn 
-from services_weekly group by week,service;
+/* Which week had the highest patient demand overall */
+SELECT 
+    week,
+    service,
+    SUM(patients_request) AS demand,
+    ROW_NUMBER() OVER (
+        PARTITION BY week 
+        ORDER BY SUM(patients_request) DESC
+    ) AS rn 
+FROM services_weekly 
+GROUP BY week, service;
 
-select * from 
-(select week,service,sum(patients_request)as demand,
-row_number() over (partition by week order by sum(patients_request) desc )
- as rn 
-from services_weekly group by week,service) as t1 where rn = 1 order by week ;
+SELECT * 
+FROM (
+    SELECT 
+        week,
+        service,
+        SUM(patients_request) AS demand,
+        ROW_NUMBER() OVER (
+            PARTITION BY week 
+            ORDER BY SUM(patients_request) DESC
+        ) AS rn 
+    FROM services_weekly 
+    GROUP BY week, service
+) AS t1 
+WHERE rn = 1 
+ORDER BY week;
 
-/Which service has the lowest satisfaction score
-select service,avg(patient_satisfaction) as satisfaction from services_weekly 
-group by service order by satisfaction asc limit 1;
+/* Which service has the lowest satisfaction score */
+SELECT 
+    service,
+    AVG(patient_satisfaction) AS satisfaction 
+FROM services_weekly 
+GROUP BY service 
+ORDER BY satisfaction ASC 
+LIMIT 1;
 
-select  service,avg(present) as avilability from services_weekly 
-group by service order by avilability asc;
-
+SELECT  
+    service,
+    AVG(present) AS avilability 
+FROM services_weekly 
+GROUP BY service 
+ORDER BY avilability ASC;
 
 
  
